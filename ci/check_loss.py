@@ -12,6 +12,12 @@ if __name__ == "__main__":
         run_name = f.read().strip()
 
     vol = Volume.lookup("example-runs-vol")
+
+    # data = b""
+    # for chunk in vol.read_file(f"{run_name}/data.jsonl"):
+    #     data += chunk
+    # print(data)
+
     contents = b""
     for chunk in vol.read_file(f"{run_name}/lora-out/README.md"):
         contents += chunk

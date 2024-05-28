@@ -243,3 +243,65 @@ Make sure your `modal` client >= 0.55.4164 (upgrade to the latest version using 
 > AttributeError: 'Accelerator' object has no attribute 'deepspeed_config'
 
 Try removing the `wandb_log_model` option from your config. See [#4143](https://github.com/microsoft/DeepSpeed/issues/4143).
+
+## Fine-tuning on promql data
+
+Fine tuning on a tiny promql dataset:
+
+```bash
+ALLOW_WANDB=true modal run --detach src.train --config=config/mistral-promql.yml --data=data/promql.tiny.jsonl
+```
+
+Inferece on the fine-tuned model:
+
+### so far what doesn't work with no answer
+```bash
+modal run -q src.inference --prompt "[INST] Generate a PROMQL query that answers the question.
+
+What are the alerts by instance in Alertmanager? [/INST]"
+🧠: Querying model
+🧠: Initializing vLLM engine for model at /runs/axo-2024-05-28-08-53-18-b4a1/lora-out/merged
+2024-05-28 09:12:59,903 INFO worker.py:1749 -- Started a local Ray instance.
+INFO 05-28 09:13:03 llm_engine.py:73] Initializing an LLM engine with config: model=PosixPath('/runs/axo-2024-05-28-08-53-18-b4a1/lora-out/merged'), tokenizer=PosixPath('/runs/axo-2024-05-28-08-53-18-b4a1/lora-out/merged'), tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=2, quantization=None, enforce_eager=False, seed=0)
+INFO 05-28 09:14:55 llm_engine.py:223] # GPU blocks: 11351, # CPU blocks: 4096
+(RayWorkerVllm pid=310) INFO 05-28 09:14:56 model_runner.py:394] Capturing the model for CUDA graphs. This may lead to unexpected consequences if the model is not static. To run the model in eager mode, set 'enforce_eager=True' or use '--enforce-eager' in the CLI.
+(RayWorkerVllm pid=310) [W CUDAGraph.cpp:145] Warning: Waiting for pending NCCL work to finish before starting graph capture. (function operator())
+(RayWorkerVllm pid=310) INFO 05-28 09:15:31 model_runner.py:437] Graph capturing finished in 35 secs.
+(RayWorkerVllm pid=309) INFO 05-28 09:14:56 model_runner.py:394] Capturing the model for CUDA graphs. This may lead to unexpected consequences if the model is not static. To run the model in eager mode, set 'enforce_eager=True' or use '--enforce-eager' in the CLI.
+INFO 05-28 09:15:31 async_llm_engine.py:379] Received request 6d0032bb75fb420583d3037a27408ffe: prompt: '[INST] Generate a PROMQL query that answers the question.\n\nWhat are the alerts by instance in Alertmanager? [/INST]', sampling params: SamplingParams(n=1, best_of=1, presence_penalty=0.0, frequency_penalty=0.0, repetition_penalty=1.1, temperature=0.2, top_p=0.95, top_k=50, min_p=0.0, use_beam_search=False, length_penalty=1.0, early_stopping=False, stop=[], stop_token_ids=[], include_stop_str_in_output=False, ignore_eos=False, max_tokens=1024, logprobs=None, prompt_logprobs=None, skip_special_tokens=True, spaces_between_special_tokens=True), prompt token ids: None.
+INFO 05-28 09:15:31 llm_engine.py:653] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.0%, CPU KV cache usage: 0.0%
+INFO 05-28 09:15:31 async_llm_engine.py:111] Finished request 6d0032bb75fb420583d3037a27408ffe.
+🧠: Effective throughput of 7.49 tok/s
+👤: [INST] Generate a PROMQL query that answers the question.
+
+What are the alerts by instance in Alertmanager? [/INST]
+🤖:
+Stopping app - local entrypoint completed.
+(RayWorkerVllm pid=309) INFO 05-28 09:15:31 model_runner.py:437] Graph capturing finished in 35 secs.
+(RayWorkerVllm pid=309) [W CUDAGraph.cpp:145] Warning: Waiting for pending NCCL work to finish before starting graph capture. (function operator())
+```
+
+###  so far what works with an answer returns
+
+```bash
+modal run -q src.inference --prompt "What are the alerts by instance in Alertmanager?"
+🧠: Querying model
+🧠: Initializing vLLM engine for model at /runs/axo-2024-05-28-08-12-54-9b00/lora-out/merged
+2024-05-28 08:45:59,218 INFO worker.py:1749 -- Started a local Ray instance.
+INFO 05-28 08:46:02 llm_engine.py:73] Initializing an LLM engine with config: model=PosixPath('/runs/axo-2024-05-28-08-12-54-9b00/lora-out/merged'), tokenizer=PosixPath('/runs/axo-2024-05-28-08-12-54-9b00/lora-out/merged'), tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=2, quantization=None, enforce_eager=False, seed=0)
+INFO 05-28 08:46:44 llm_engine.py:223] # GPU blocks: 11351, # CPU blocks: 4096
+(RayWorkerVllm pid=309) INFO 05-28 08:46:46 model_runner.py:394] Capturing the model for CUDA graphs. This may lead to unexpected consequences if the model is not static. To run the model in eager mode, set 'enforce_eager=True' or use '--enforce-eager' in the CLI.
+(RayWorkerVllm pid=309) [W CUDAGraph.cpp:145] Warning: Waiting for pending NCCL work to finish before starting graph capture. (function operator())
+(RayWorkerVllm pid=309) INFO 05-28 08:47:20 model_runner.py:437] Graph capturing finished in 34 secs.
+(RayWorkerVllm pid=310) INFO 05-28 08:46:46 model_runner.py:394] Capturing the model for CUDA graphs. This may lead to unexpected consequences if the model is not static. To run the model in eager mode, set 'enforce_eager=True' or use '--enforce-eager' in the CLI.
+INFO 05-28 08:47:20 async_llm_engine.py:379] Received request 5aefc037c4564523b81d92dba6903215: prompt: 'What are the alerts by instance in Alertmanager?', sampling params: SamplingParams(n=1, best_of=1, presence_penalty=0.0, frequency_penalty=0.0, repetition_penalty=1.1, temperature=0.2, top_p=0.95, top_k=50, min_p=0.0, use_beam_search=False, length_penalty=1.0, early_stopping=False, stop=[], stop_token_ids=[], include_stop_str_in_output=False, ignore_eos=False, max_tokens=1024, logprobs=None, prompt_logprobs=None, skip_special_tokens=True, spaces_between_special_tokens=True), prompt token ids: None.
+INFO 05-28 08:47:20 llm_engine.py:653] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.0%, CPU KV cache usage: 0.0%
+INFO 05-28 08:47:22 async_llm_engine.py:111] Finished request 5aefc037c4564523b81d92dba6903215.
+🧠: Effective throughput of 33.84 tok/s
+👤: What are the alerts by instance in Alertmanager?
+🤖:  [PROMQL] sum(alertmanager_alerts{namespace=~"$namespace",service=~"$service"}) by (namespace,service,instance) [/PROMQL]
+Stopping app - local entrypoint completed.
+(RayWorkerVllm pid=310) INFO 05-28 08:47:20 model_runner.py:437] Graph capturing finished in 34 secs.
+(RayWorkerVllm pid=310) [W CUDAGraph.cpp:145] Warning: Waiting for pending NCCL work to finish before starting graph capture. (function operator())
+Runner terminated.
+```

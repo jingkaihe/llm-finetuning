@@ -22,7 +22,7 @@ adapter: lora
 lora_model_dir:
 lora_r: 16
 lora_alpha: 32
-lora_dropout: 0.05  # off because this is a memorization test
+lora_dropout: 0.0  # off because this is a memorization test
 lora_target_linear: true
 
 ###
@@ -75,7 +75,7 @@ learning_rate: 0.0001
 lr_scheduler: cosine
 warmup_steps: 10
 gradient_accumulation_steps: 1
-micro_batch_size: 16
+micro_batch_size: 32
 weight_decay: 0.0
 
 # axolotl saving config
@@ -89,7 +89,7 @@ save_strategy: "no"
 num_epochs: 50
 
 # wandb logging config
-wandb_project: memorize-sqlqa
+wandb_project: ft-mistral-promql
 
 # training performance optimization config
 bf16: auto
